@@ -329,12 +329,11 @@ body {
   background: rgba(255, 255, 255, 0.23);
 }
 
-
 .btn-history {
   padding: 14px 24px;
   font-size: 14px;
   font-weight: 600;
-  border-radius: 20px;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.1);
   color: var(--white);
   border: 1px solid rgba(255, 255, 255, 0.15);
