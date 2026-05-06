@@ -91,6 +91,24 @@ const api = {
 
   listarCVs: () => api._fetch('/curriculos'),
   getCV: (id) => api._fetch(`/curriculos/${id}`),
+
+  downloadCVWord: async (id) => {
+    const token = api.getToken();
+    const response = await fetch(`${API_URL}/curriculos/${id}/download/word`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`Erro ${response.status}`);
+    return response.blob();
+  },
+
+  downloadCVPdf: async (id) => {
+    const token = api.getToken();
+    const response = await fetch(`${API_URL}/curriculos/${id}/download/pdf`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error(`Erro ${response.status}`);
+    return response.blob();
+  },
 };
 
 // ── Utilidades de UI ──

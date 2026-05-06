@@ -61,7 +61,12 @@
       <div id="modal-soft" style="padding:14px 16px"></div>
     </div>
 
-    <p style="font-size:12px;opacity:0.5;margin-bottom:16px">ℹ️ Download em PDF será implementado na Sprint 6.</p>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn btn-secondary" id="btn-download-word" onclick="downloadCVWord()" style="flex:1">📄 Baixar Word</button>
+      <button class="btn btn-secondary" id="btn-download-pdf" onclick="downloadCVPdf()" style="flex:1">📕 Baixar PDF</button>
+    </div>
+
+    <button class="btn btn-primary" id="btn-editar" onclick="editarCV()" style="width:100%;margin-bottom:16px">✏️ Editar CV</button>
   </div>
 </div>
 
@@ -111,6 +116,9 @@
       const cv = await api.getCV(id);
       hideLoading();
 
+      // Store current CV ID for download
+      window.currentCVId = id;
+
       document.getElementById('modal-titulo').textContent = cv.titulo;
       document.getElementById('modal-meta').textContent =
         `Gerado em ${new Date(cv.geradoEm).toLocaleDateString('pt-BR')} · Perfil v${cv.versaoPerfilAncora}${cv.editadoManualmente ? ' · Editado manualmente' : ''}`;
@@ -147,6 +155,54 @@
       hideLoading();
       showToast('Erro ao abrir CV.', 'error');
     }
+  }
+
+  async function downloadCVWord() {
+    const btn = document.getElementById('btn-download-word');
+    btn.disabled = true; btn.textContent = 'Preparando...';
+    try {
+      const blob = await api.downloadCVWord(window.currentCVId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `curriculo_${window.currentCVId}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast('CV baixado em Word! ✓');
+    } catch (err) {
+      showToast(err.message || 'Erro ao baixar CV', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '📄 Baixar Word';
+    }
+  }
+
+  async function downloadCVPdf() {
+    const btn = document.getElementById('btn-download-pdf');
+    btn.disabled = true; btn.textContent = 'Preparando...';
+    try {
+      const blob = await api.downloadCVPdf(window.currentCVId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `curriculo_${window.currentCVId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast('CV baixado em PDF! ✓');
+    } catch (err) {
+      showToast(err.message || 'Erro ao baixar CV', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '📕 Baixar PDF';
+    }
+  }
+
+  async function editarCV() {
+    closeModal();
+    // Redirect to cv-editar.html with the CV ID
+    window.location.href = `cv-editar.html?id=${window.currentCVId}`;
   }
 
   function closeModal() {

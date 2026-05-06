@@ -48,11 +48,18 @@ public class PerfilController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.Nome) || string.IsNullOrWhiteSpace(dto.Email))
             return BadRequest(new { message = "Nome e email são obrigatórios" });
 
-        var success = await _perfilService.SalvarPerfilAsync(usuarioId, dto);
-        if (!success)
-            return NotFound(new { message = "Perfil não encontrado" });
+        try
+        {
+            var success = await _perfilService.SalvarPerfilAsync(usuarioId, dto);
+            if (!success)
+                return NotFound(new { message = "Perfil não encontrado" });
 
-        var perfilAtualizado = await _perfilService.GetPerfilAsync(usuarioId);
-        return Ok(perfilAtualizado);
+            var perfilAtualizado = await _perfilService.GetPerfilAsync(usuarioId);
+            return Ok(perfilAtualizado);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = $"Erro ao salvar perfil: {ex.Message}" });
+        }
     }
 }

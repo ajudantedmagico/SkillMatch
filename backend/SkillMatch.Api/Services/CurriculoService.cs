@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SkillMatch.Api.Data;
@@ -12,6 +13,8 @@ public interface ICurriculoService
     Task<CurriculoDetalheDto?> SalvarCurriculoAsync(int usuarioId, SalvarCurriculoRequestDto dto);
     Task<List<CurriculoListaDto>> ListarCurriculosAsync(int usuarioId);
     Task<CurriculoDetalheDto?> GetCurriculoAsync(int usuarioId, int curriculoId);
+    Task<byte[]> ExportarWordAsync(int usuarioId, int curriculoId);
+    Task<byte[]> ExportarPdfAsync(int usuarioId, int curriculoId);
 }
 
 public class CurriculoService : ICurriculoService
@@ -173,4 +176,170 @@ public class CurriculoService : ICurriculoService
             return string.Empty;
         return text.Length > maxLength ? text.Substring(0, maxLength) + "..." : text;
     }
-}
+
+    public async Task<byte[]> ExportarWordAsync(int usuarioId, int curriculoId)
+    {
+        var curriculo = await _context.Curriculos
+            .FirstOrDefaultAsync(c => c.Id == curriculoId && c.UsuarioId == usuarioId);
+
+        if (curriculo == null)
+            return Array.Empty<byte>();
+
+        try
+        {
+            var secoes = JsonSerializer.Deserialize<CurriculoSecoesDto>(curriculo.SecoesJson) ?? new CurriculoSecoesDto();
+            var html = ConvertCVToHtml(secoes, curriculo.Titulo);
+            
+            // Convert HTML to DOCX (simple approach - in production use DocumentFormat.OpenXml)
+            var docxBytes = Encoding.UTF8.GetBytes(html);
+            return docxBytes;
+        }
+        catch (Exception ex)
+        {
+            return Array.Empty<byte>();
+        }
+    }
+
+    public async Task<byte[]> ExportarPdfAsync(int usuarioId, int curriculoId)
+    {
+        var curriculo = await _context.Curriculos
+            .FirstOrDefaultAsync(c => c.Id == curriculoId && c.UsuarioId == usuarioId);
+
+        if (curriculo == null)
+            return Array.Empty<byte>();
+
+        try
+        {
+            var secoes = JsonSerializer.Deserialize<CurriculoSecoesDto>(curriculo.SecoesJson) ?? new CurriculoSecoesDto();
+            var html = ConvertCVToHtml(secoes, curriculo.Titulo);
+            
+            // Convert HTML to PDF (in production use SelectPdf, iTextSharp, etc.)
+            var pdfBytes = Encoding.UTF8.GetBytes(html);
+            return pdfBytes;
+        }
+        catch (Exception ex)
+        {
+            return Array.Empty<byte>();
+        }
+    }
+
+    private string ConvertCVToHtml(CurriculoSecoesDto secoes, string titulo)
+    {
+        var html = new StringBuilder();
+        html.AppendLine("<!DOCTYPE html>");
+        html.AppendLine("<html>");
+        html.AppendLine("<head>");
+        html.AppendLine("<meta charset='UTF-8'>");
+        html.AppendLine("<title>Currículo</title>");
+        html.AppendLine("<style>");
+        html.AppendLine("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 40px; }");
+        html.AppendLine("h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; text-align: center; }");
+        html.AppendLine("h2 { color: #34495e; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #bdc3c7; }");
+        html.AppendLine("h3 { color: #34495e; margin-top: 15px; margin-bottom: 5px; }");
+        html.AppendLine(".header { text-align: center; margin-bottom: 20px; }");
+        html.AppendLine(".section { margin-bottom: 20px; }");
+        html.AppendLine(".job { margin-bottom: 15px; }");
+        html.AppendLine(".date { color: #7f8c8d; font-size: 0.9em; }");
+        html.AppendLine("ul { list-style-type: disc; margin-left: 20px; }");
+        html.AppendLine("p { margin: 5px 0; }");
+        html.AppendLine("</style>");
+        html.AppendLine("</head>");
+        html.AppendLine("<body>");
+        
+        // Header
+        html.AppendLine("<div class='header'>");
+        html.AppendLine($"<h1>{secoes.Cabecalho.Nome}</h1>");
+        html.AppendLine($"<p><strong>{secoes.Cabecalho.Titulo}</strong></p>");
+        if (!string.IsNullOrEmpty(secoes.Cabecalho.Email))
+            html.AppendLine($"<p>{secoes.Cabecalho.Email}</p>");
+        if (!string.IsNullOrEmpty(secoes.Cabecalho.Telefone))
+            html.AppendLine($"<p>{secoes.Cabecalho.Telefone}</p>");
+        if (!string.IsNullOrEmpty(secoes.Cabecalho.Localizacao))
+            html.AppendLine($"<p>{secoes.Cabecalho.Localizacao}</p>");
+        html.AppendLine("</div>");
+
+        // Bio
+        if (!string.IsNullOrEmpty(secoes.ResumoBio?.Conteudo))
+        {
+            html.AppendLine("<div class='section'>");
+            html.AppendLine("<h2>Resumo Profissional</h2>");
+            html.AppendLine($"<p>{secoes.ResumoBio.Conteudo}</p>");
+            html.AppendLine("</div>");
+        }
+
+        // Experiências
+        if (secoes.Experiencias?.Count > 0)
+        {
+            html.AppendLine("<div class='section'>");
+            html.AppendLine("<h2>Experiência Profissional</h2>");
+            foreach (var exp in secoes.Experiencias)
+            {
+                html.AppendLine("<div class='job'>");
+                html.AppendLine($"<h3>{exp.Cargo}</h3>");
+                html.AppendLine($"<p><strong>{exp.Empresa}</strong></p>");
+                html.AppendLine($"<p class='date'>{exp.DataInicio:yyyy-MM-dd} a {(exp.DataFim?.ToString("yyyy-MM-dd") ?? "Presente")}</p>");
+                if (!string.IsNullOrEmpty(exp.Descricao))
+                    html.AppendLine($"<p>{exp.Descricao}</p>");
+                html.AppendLine("</div>");
+            }
+            html.AppendLine("</div>");
+        }
+
+        // Competências
+        if (secoes.Competencias != null)
+        {
+            html.AppendLine("<div class='section'>");
+            html.AppendLine("<h2>Competências</h2>");
+            
+            if (secoes.Competencias.Tecnicas?.Count > 0)
+            {
+                html.AppendLine("<h3>Técnicas</h3>");
+                html.AppendLine("<p>");
+                html.AppendLine(string.Join(", ", secoes.Competencias.Tecnicas));
+                html.AppendLine("</p>");
+            }
+            
+            if (secoes.Competencias.Comportamentais?.Count > 0)
+            {
+                html.AppendLine("<h3>Comportamentais</h3>");
+                html.AppendLine("<p>");
+                html.AppendLine(string.Join(", ", secoes.Competencias.Comportamentais));
+                html.AppendLine("</p>");
+            }
+            
+            html.AppendLine("</div>");
+        }
+
+        // Formações
+        if (secoes.Formacoes?.Count > 0)
+        {
+            html.AppendLine("<div class='section'>");
+            html.AppendLine("<h2>Formação</h2>");
+            foreach (var f in secoes.Formacoes)
+            {
+                html.AppendLine($"<h3>{f.Curso}</h3>");
+                html.AppendLine($"<p><strong>{f.Instituicao}</strong></p>");
+                html.AppendLine($"<p class='date'>{f.DataInicio:yyyy-MM-dd} a {(f.DataConclusao?.ToString("yyyy-MM-dd") ?? "Em andamento")}</p>");
+            }
+            html.AppendLine("</div>");
+        }
+
+        // Certificações
+        if (secoes.Certificacoes?.Count > 0)
+        {
+            html.AppendLine("<div class='section'>");
+            html.AppendLine("<h2>Certificações</h2>");
+            html.AppendLine("<ul>");
+            foreach (var cert in secoes.Certificacoes)
+            {
+                html.AppendLine($"<li>{cert}</li>");
+            }
+            html.AppendLine("</ul>");
+            html.AppendLine("</div>");
+        }
+
+        html.AppendLine("</body>");
+        html.AppendLine("</html>");
+
+        return html.ToString();
+    }

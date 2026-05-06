@@ -99,7 +99,9 @@
 <!-- Barra de salvar fixa -->
 <div class="save-bar">
   <button class="btn btn-ghost" onclick="history.back()" style="flex:0.6">Cancelar</button>
-  <button class="btn btn-primary" id="btn-salvar" onclick="salvarCV()" style="flex:1.4">💾 Salvar no histórico</button>
+  <button class="btn btn-secondary" id="btn-download-word" onclick="downloadCVWord()" style="flex:0.9" title="Baixar em Word">📄 Word</button>
+  <button class="btn btn-secondary" id="btn-download-pdf" onclick="downloadCVPdf()" style="flex:0.9" title="Baixar em PDF">📕 PDF</button>
+  <button class="btn btn-primary" id="btn-salvar" onclick="salvarCV()" style="flex:1.4">💾 Salvar</button>
 </div>
 
 <nav class="bottom-nav">
@@ -220,7 +222,102 @@
       setTimeout(() => window.location.href = 'historico.html', 1500);
     } catch (err) {
       showToast(err.message, 'error');
-      btn.disabled = false; btn.textContent = '💾 Salvar no histórico';
+      btn.disabled = false; btn.textContent = '💾 Salvar';
+    }
+  }
+
+  // ── Download ──
+  async function downloadCVWord() {
+    const titulo = document.getElementById('cv-titulo').value.trim();
+    if (!titulo) { showToast('Dê um nome para o CV antes de baixar.', 'error'); return; }
+
+    const btn = document.getElementById('btn-download-word');
+    btn.disabled = true; btn.textContent = 'Preparando...';
+    try {
+      // First save the CV if not saved yet
+      let cvId = sessionStorage.getItem('cv_id');
+      if (!cvId) {
+        const result = await api.salvarCV({
+          titulo,
+          descricaoVaga,
+          secoes: {
+            resumoProfissional: document.getElementById('resumo-prof').value,
+            experienciaProfissional: experiencias,
+            formacaoAcademica: secoes.formacaoAcademica || [],
+            competenciasTecnicas: competencias,
+            softSkills
+          },
+          resumoProfissionalEditado: flags.resumo,
+          experienciaEditada: flags.exp,
+          formacaoEditada: flags.form,
+          competenciasEditadas: flags.comp,
+          softSkillsEditadas: flags.soft
+        });
+        cvId = result.id;
+        sessionStorage.setItem('cv_id', cvId);
+      }
+
+      const blob = await api.downloadCVWord(cvId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${titulo}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast('CV baixado em Word! ✓');
+    } catch (err) {
+      showToast(err.message || 'Erro ao baixar CV', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '📄 Word';
+    }
+  }
+
+  async function downloadCVPdf() {
+    const titulo = document.getElementById('cv-titulo').value.trim();
+    if (!titulo) { showToast('Dê um nome para o CV antes de baixar.', 'error'); return; }
+
+    const btn = document.getElementById('btn-download-pdf');
+    btn.disabled = true; btn.textContent = 'Preparando...';
+    try {
+      // First save the CV if not saved yet
+      let cvId = sessionStorage.getItem('cv_id');
+      if (!cvId) {
+        const result = await api.salvarCV({
+          titulo,
+          descricaoVaga,
+          secoes: {
+            resumoProfissional: document.getElementById('resumo-prof').value,
+            experienciaProfissional: experiencias,
+            formacaoAcademica: secoes.formacaoAcademica || [],
+            competenciasTecnicas: competencias,
+            softSkills
+          },
+          resumoProfissionalEditado: flags.resumo,
+          experienciaEditada: flags.exp,
+          formacaoEditada: flags.form,
+          competenciasEditadas: flags.comp,
+          softSkillsEditadas: flags.soft
+        });
+        cvId = result.id;
+        sessionStorage.setItem('cv_id', cvId);
+      }
+
+      const blob = await api.downloadCVPdf(cvId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${titulo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showToast('CV baixado em PDF! ✓');
+    } catch (err) {
+      showToast(err.message || 'Erro ao baixar CV', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '📕 PDF';
     }
   }
 </script>

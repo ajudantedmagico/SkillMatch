@@ -86,4 +86,32 @@ public class CurriculoController : ControllerBase
 
         return Ok(curriculo);
     }
+
+    [HttpGet("{id}/download/word")]
+    public async Task<IActionResult> DownloadWord(int id)
+    {
+        var usuarioId = GetUsuarioId();
+        if (usuarioId == 0)
+            return Unauthorized();
+
+        var bytes = await _curriculoService.ExportarWordAsync(usuarioId, id);
+        if (bytes.Length == 0)
+            return NotFound(new { message = "Currículo não encontrado" });
+
+        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"curriculo_{id}.docx");
+    }
+
+    [HttpGet("{id}/download/pdf")]
+    public async Task<IActionResult> DownloadPdf(int id)
+    {
+        var usuarioId = GetUsuarioId();
+        if (usuarioId == 0)
+            return Unauthorized();
+
+        var bytes = await _curriculoService.ExportarPdfAsync(usuarioId, id);
+        if (bytes.Length == 0)
+            return NotFound(new { message = "Currículo não encontrado" });
+
+        return File(bytes, "application/pdf", $"curriculo_{id}.pdf");
+    }
 }

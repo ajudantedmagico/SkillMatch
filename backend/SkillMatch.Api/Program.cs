@@ -54,6 +54,7 @@ builder.Services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPerfilService, PerfilService>();
 builder.Services.AddScoped<ICurriculoService, CurriculoService>();
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 
 var app = builder.Build();
 

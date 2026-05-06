@@ -326,32 +326,40 @@
       const perfil = await api.getPerfil();
       if (!perfil) return;
 
-      document.getElementById('nome').value = perfil.nomeCompleto || '';
+      document.getElementById('nome').value = perfil.nome || '';
       document.getElementById('cidade').value = perfil.cidade || '';
       document.getElementById('estado').value = perfil.estado || '';
       document.getElementById('email').value = perfil.email || '';
       document.getElementById('telefone').value = perfil.telefone || '';
-      document.getElementById('linkedin').value = perfil.linkedin || '';
+      document.getElementById('linkedin').value = perfil.linkedIn || '';
       document.getElementById('portfolio').value = perfil.portfolio || '';
-      document.getElementById('resumo').value = perfil.resumoProfissional || '';
+      document.getElementById('resumo').value = perfil.objetivosProfissionais || '';
 
-      competencias = perfil.competencias || [];
+      competencias = perfil.competenciasTecnicas || [];
       softSkills = perfil.softSkills || [];
       renderTags('competencia');
       renderTags('softskill');
 
       formacoes = (perfil.formacoes || []).map(f => ({
-        instituicao: f.instituicao, curso: f.curso, tipo: f.tipo,
-        inicio: f.dataInicio?.slice(0, 7), conclusao: f.dataConclusao?.slice(0, 7)
+        id: f.id,
+        instituicao: f.instituicao, 
+        curso: f.curso, 
+        tipo: f.tipo,
+        inicio: f.dataInicio?.slice(0, 7), 
+        conclusao: f.dataConclusao?.slice(0, 7)
       }));
       renderFormacoes();
 
       experiencias = (perfil.experiencias || []).map(e => ({
-        empresa: e.empresa, cargo: e.cargo, empregoAtual: e.empregoAtual,
-        inicio: e.dataInicio?.slice(0, 7), fim: e.dataFim?.slice(0, 7),
-        atividades: e.principaisAtividades,
-        tecnologias: e.tecnologiasUtilizadas?.join(', '),
-        resultados: e.resultadosConquistas
+        id: e.id,
+        empresa: e.empresa, 
+        cargo: e.cargo, 
+        empregoAtual: e.empregoAtual,
+        inicio: e.dataInicio?.slice(0, 7), 
+        fim: e.dataFim?.slice(0, 7),
+        atividades: e.atividades,
+        tecnologias: (e.tecnologias || []).join(', '),
+        resultados: e.resultados
       }));
       renderExperiencias();
     } catch (err) { /* perfil novo */ }
@@ -363,28 +371,34 @@
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
       const dto = {
-        nomeCompleto: document.getElementById('nome').value,
+        nome: document.getElementById('nome').value,
         cidade: document.getElementById('cidade').value,
         estado: document.getElementById('estado').value,
         email: document.getElementById('email').value,
         telefone: document.getElementById('telefone').value,
-        linkedin: document.getElementById('linkedin').value || null,
-        portfolio: document.getElementById('portfolio').value || null,
-        resumoProfissional: document.getElementById('resumo').value || null,
-        competencias,
-        softSkills,
+        linkedIn: document.getElementById('linkedin').value || '',
+        portfolio: document.getElementById('portfolio').value || '',
+        objetivosProfissionais: document.getElementById('resumo').value || '',
+        competenciasTecnicas: competencias,
+        softSkills: softSkills,
         formacoes: formacoes.map(f => ({
-          instituicao: f.instituicao || '', curso: f.curso || '', tipo: f.tipo || 'livre',
+          id: f.id || null,
+          instituicao: f.instituicao || '', 
+          curso: f.curso || '', 
+          tipo: f.tipo || 'livre',
           dataInicio: f.inicio ? new Date(f.inicio + '-01').toISOString() : new Date().toISOString(),
           dataConclusao: f.conclusao ? new Date(f.conclusao + '-01').toISOString() : null
         })),
         experiencias: experiencias.map(e => ({
-          empresa: e.empresa || '', cargo: e.cargo || '', empregoAtual: e.empregoAtual || false,
+          id: e.id || null,
+          empresa: e.empresa || '', 
+          cargo: e.cargo || '', 
+          empregoAtual: e.empregoAtual || false,
           dataInicio: e.inicio ? new Date(e.inicio + '-01').toISOString() : new Date().toISOString(),
           dataFim: (!e.empregoAtual && e.fim) ? new Date(e.fim + '-01').toISOString() : null,
-          principaisAtividades: e.atividades || '',
-          tecnologiasUtilizadas: (e.tecnologias || '').split(',').map(t => t.trim()).filter(Boolean),
-          resultadosConquistas: e.resultados || null
+          atividades: e.atividades || '',
+          tecnologias: (e.tecnologias || '').split(',').map(t => t.trim()).filter(Boolean),
+          resultados: e.resultados || ''
         }))
       };
       await api.salvarPerfil(dto);
