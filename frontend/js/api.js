@@ -53,7 +53,7 @@ const api = {
 
   logout() {
     this.clearToken();
-    window.location.href = '/index.html';
+    window.location.href = 'index.html';
   },
 
   async changePassword(senhaAtual, novaSenha) {
