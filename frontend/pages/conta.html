@@ -106,6 +106,48 @@
       width: 90%;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
+    .editor-preview {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .editor-preview img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      max-width: none;
+      width: auto;
+      height: 100%;
+      transform: translate(-50%, -50%) scale(1);
+      transform-origin: center center;
+      transition: transform 0.15s ease;
+    }
+    .editor-mask {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75);
+    }
+    .editor-controls {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .editor-controls label {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      display: block;
+    }
+    .editor-controls input[type="file"],
+    .editor-controls input[type="range"] {
+      width: 100%;
+    }
     .modal-content h2 {
       margin-bottom: 12px;
       font-size: 20px;
@@ -137,7 +179,7 @@
   <div style="padding: 0 16px 80px;">
     <!-- Avatar & Nome -->
     <div style="text-align:center;margin-bottom:32px">
-      <div class="avatar" id="avatar-initials" style="margin:0 auto 16px;width:80px;height:80px;font-size:32px">?</div>
+      <div class="avatar" id="avatar-initials" onclick="openAvatarEditor()" style="margin:0 auto 16px;width:80px;height:80px;font-size:32px;cursor:pointer">?</div>
       <div class="name" id="user-name" style="font-size:20px;margin-bottom:4px">Carregando...</div>
       <div style="color:rgba(255,255,255,0.6);font-size:14px" id="user-email">email@example.com</div>
     </div>
@@ -270,6 +312,32 @@
           🗑️ Deletar Minha Conta Permanentemente
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de edição de avatar -->
+<div id="avatar-editor-modal" class="modal-overlay" onclick="if(event.target === this) closeAvatarEditor()">
+  <div class="modal-content">
+    <h2>Editar imagem do avatar</h2>
+    <p>Escolha uma foto e ajuste o corte antes de salvar.</p>
+    <div class="editor-preview">
+      <img id="avatar-editor-img" src="" alt="Preview da imagem" />
+      <div class="editor-mask"></div>
+    </div>
+    <div class="editor-controls">
+      <label>Selecionar imagem</label>
+      <input type="file" id="avatar-image-file" accept="image/*" />
+      <label>Zoom</label>
+      <input type="range" id="avatar-zoom" min="1" max="2" step="0.01" value="1" />
+      <label>Posição X</label>
+      <input type="range" id="avatar-offset-x" min="-60" max="60" step="1" value="0" />
+      <label>Posição Y</label>
+      <input type="range" id="avatar-offset-y" min="-60" max="60" step="1" value="0" />
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeAvatarEditor()">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveAvatarImage()">Salvar Foto</button>
     </div>
   </div>
 </div>
@@ -432,6 +500,120 @@
     document.getElementById('modal-delete').classList.remove('active');
     document.getElementById('form-delete').reset();
   }
+
+  function openAvatarEditor() {
+    const modal = document.getElementById('avatar-editor-modal');
+    const stored = localStorage.getItem('sm_avatar_image');
+    const editorImg = document.getElementById('avatar-editor-img');
+    const fileInput = document.getElementById('avatar-image-file');
+    const zoomInput = document.getElementById('avatar-zoom');
+    const offsetX = document.getElementById('avatar-offset-x');
+    const offsetY = document.getElementById('avatar-offset-y');
+
+    editorImg.src = stored || '';
+    fileInput.value = '';
+    zoomInput.value = 1;
+    offsetX.value = 0;
+    offsetY.value = 0;
+    updateAvatarEditor();
+    modal.classList.add('active');
+  }
+
+  function closeAvatarEditor() {
+    document.getElementById('avatar-editor-modal').classList.remove('active');
+  }
+
+  function updateAvatarEditor() {
+    const img = document.getElementById('avatar-editor-img');
+    if (!img.src) return;
+    const zoom = parseFloat(document.getElementById('avatar-zoom').value);
+    const x = parseInt(document.getElementById('avatar-offset-x').value, 10);
+    const y = parseInt(document.getElementById('avatar-offset-y').value, 10);
+    img.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${zoom})`;
+    persistAvatarEditorImage();
+  }
+
+  document.getElementById('avatar-image-file').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const editorImg = document.getElementById('avatar-editor-img');
+      editorImg.src = reader.result;
+      editorImg.style.transform = 'translate(-50%, -50%) scale(1)';
+      persistAvatarEditorImage();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  ['avatar-zoom', 'avatar-offset-x', 'avatar-offset-y'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateAvatarEditor);
+  });
+
+  function getAvatarCanvasDataUrl() {
+    const img = document.getElementById('avatar-editor-img');
+    if (!img.src) return null;
+
+    const canvas = document.createElement('canvas');
+    const size = 240;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const zoom = parseFloat(document.getElementById('avatar-zoom').value);
+    const x = parseInt(document.getElementById('avatar-offset-x').value, 10);
+    const y = parseInt(document.getElementById('avatar-offset-y').value, 10);
+
+    const image = new Image();
+    image.src = img.src;
+    return new Promise(resolve => {
+      image.onload = () => {
+        const previewHeight = img.clientHeight;
+        const fitScale = image.naturalHeight ? previewHeight / image.naturalHeight : 1;
+        const drawW = image.naturalWidth * fitScale * zoom;
+        const drawH = image.naturalHeight * fitScale * zoom;
+        const drawX = (size - drawW) / 2 + x;
+        const drawY = (size - drawH) / 2 + y;
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(image, drawX, drawY, drawW, drawH);
+        resolve(canvas.toDataURL('image/png'));
+      };
+      image.onerror = () => resolve(null);
+    });
+  }
+
+  async function persistAvatarEditorImage() {
+    const src = await getAvatarCanvasDataUrl();
+    if (!src) return;
+    localStorage.setItem('sm_avatar_image', src);
+    applyAvatarImage(src);
+  }
+
+  async function saveAvatarImage() {
+    const src = await getAvatarCanvasDataUrl();
+    if (!src) {
+      showToast('Selecione uma imagem antes de salvar', 'error');
+      return;
+    }
+    localStorage.setItem('sm_avatar_image', src);
+    applyAvatarImage(src);
+    closeAvatarEditor();
+    showToast('Imagem do avatar salva localmente!', 'success');
+  }
+
+  function applyAvatarImage(src) {
+    const avatar = document.getElementById('avatar-initials');
+    avatar.style.backgroundImage = `url('${src}')`;
+    avatar.style.backgroundSize = 'cover';
+    avatar.style.backgroundPosition = 'center';
+    avatar.textContent = '';
+  }
+
+  function restoreAvatarImage() {
+    const stored = localStorage.getItem('sm_avatar_image');
+    if (stored) applyAvatarImage(stored);
+  }
+
+  restoreAvatarImage();
 
   document.getElementById('form-delete').addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -65,11 +65,25 @@
 <script>
   requireAuth();
   const user = api.getUser();
+  const avatarEl = document.getElementById('avatar-initials');
+
+  function restoreHomeAvatar() {
+    const stored = localStorage.getItem('sm_avatar_image');
+    if (stored) {
+      avatarEl.style.backgroundImage = `url('${stored}')`;
+      avatarEl.style.backgroundSize = 'cover';
+      avatarEl.style.backgroundPosition = 'center';
+      avatarEl.textContent = '';
+    }
+  }
+
   if (user) {
     document.getElementById('user-name').textContent = user.nome;
-    document.getElementById('avatar-initials').textContent =
+    avatarEl.textContent =
       user.nome.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }
+
+  restoreHomeAvatar();
 </script>
 </body>
 </html>
