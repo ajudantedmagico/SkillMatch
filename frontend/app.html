@@ -10,14 +10,17 @@
 </head>
 <body>
 <div class="app-shell">
-  <!-- Header -->
-  <div class="app-header">
-    <div class="logo">Skill<span>Match</span></div>
-    <button onclick="api.logout()" class="btn btn-ghost btn-sm" style="width:auto;margin-left:auto;padding:6px 12px">Sair</button>
-  </div>
 
   <!-- Hero -->
   <div class="home-hero">
+
+    <!-- Header -->
+  <div class="app-header">
+    <button onclick="api.logout()" class="btn btn-ghost btn-sm logout-btn">
+      Sair
+    </button>
+  </div>
+    <img src="/frontend/img/simbol-skillmatch-white 2.png" class="hero-bg-logo" alt="Logo fundo">
     <button onclick="location.href='pages/conta.html'" class="avatar" id="avatar-initials" style="border:none;background:none;cursor:pointer;padding:0">?</button>
     <div class="hero-text">
       <div class="name" id="user-name">Carregando...</div>

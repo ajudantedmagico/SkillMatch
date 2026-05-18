@@ -45,13 +45,20 @@ body {
 
 /* ── Header ── */
 .app-header {
-  padding: 20px 24px 12px;
+  width: 100%;
+
+  padding: 20px 24px 0;
+
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+
+  background: transparent;
+
+  position: relative;
+  z-index: 3;
 }
 .app-header .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
-.app-header .logo span { color: var(--white); }
 .app-header .back-btn {
   background: none; border: none; color: var(--white);
   font-size: 20px; cursor: pointer; padding: 4px;
@@ -225,15 +232,75 @@ body {
 .loading-overlay p { color: var(--white); font-size: 15px; opacity: 0.9; }
 
 /* ── Tela principal ── */
-.home-hero {
-  padding: 24px 24px 10px;
+
+/* conteúdo fica na frente */
+.hero-circle .avatar,
+.hero-circle .hero-text{
+  position: relative;
+  z-index: 2;
+}
+/* círculo grande */
+.home-hero{
+  width: 100%;
+
+  background: linear-gradient(
+    180deg,
+    #a058ff9f 0%,
+    #b27bff8c 80%
+  );
+
+  border-bottom-left-radius: 50%;
+  border-bottom-right-radius: 50%;
+
+  overflow: visible;
+
+  box-shadow:
+    inset 0 -8px 20px  rgba(255,255,255,0.15),
+    0 10px 30px rgba(0,0,0,0.25);
+}
+
+.home-hero{
+  width: 100%;
+  min-height: 320px;
+
+  padding-bottom: 50px;
+
+  background: linear-gradient(
+    180deg,
+    #a058ff31 0%,
+    #b27bff3b 100%
+  );
+
+  border-bottom-left-radius: 50%;
+  border-bottom-right-radius: 50%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  text-align: center;
-  flex: 1;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 12px 24px rgba(0,0,0,0.22);
 }
+
+/* LOGO A DO FUNDO */
+.hero-bg-logo{
+  position: absolute;
+  width: 101%;
+  max-width: 600px;
+
+  opacity: 0.1;
+
+  bottom: 30px;
+  left: 50%;
+
+  transform: translateX(-50%) ;
+
+  z-index: 0;
+  pointer-events: none;
+}
+
 .avatar {
   width: 80px;
   height: 80px;
@@ -273,7 +340,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin-top: -90px;
+  margin-top: 90px;
   position: relative;
   z-index: 2;
 }
@@ -369,3 +436,4 @@ body {
   font-weight: 500;
   border: 1px solid rgba(176,102,245,0.3);
 }
+
