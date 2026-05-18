@@ -1,9 +1,22 @@
 using System.Text;
 using System.Text.Json;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.Layout.Properties;
 using Microsoft.EntityFrameworkCore;
 using SkillMatch.Api.Data;
 using SkillMatch.Api.Dtos;
 using SkillMatch.Api.Models;
+using WordParagraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
+using PdfParagraph = iText.Layout.Element.Paragraph;
+using WordDocument = DocumentFormat.OpenXml.Wordprocessing.Document;
+using PdfDocument = iText.Layout.Document;
+using PdfTable = iText.Layout.Element.Table;
+using WordText = DocumentFormat.OpenXml.Wordprocessing.Text;
 
 namespace SkillMatch.Api.Services;
 
@@ -21,11 +34,13 @@ public class CurriculoService : ICurriculoService
 {
     private readonly SkillMatchContext _context;
     private readonly IPerfilService _perfilService;
+    private readonly IOpenAIService _openAIService;
 
-    public CurriculoService(SkillMatchContext context, IPerfilService perfilService)
+    public CurriculoService(SkillMatchContext context, IPerfilService perfilService, IOpenAIService openAIService)
     {
         _context = context;
         _perfilService = perfilService;
+        _openAIService = openAIService;
     }
 
     public async Task<GerarCurriculoResponseDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto)
@@ -38,8 +53,18 @@ public class CurriculoService : ICurriculoService
         if (perfil == null)
             throw new InvalidOperationException("Perfil do usuário não encontrado");
 
-        // TODO: Call AI service to generate optimized CV content
-        // For now, we'll return a basic structure based on the profile
+        // Call AI service to generate optimized CV content
+        string resumoOtimizado = perfil.ObjetivosProfissionais;
+        try
+        {
+            var promptResume = $"Com base na seguinte descrição de vaga:\n\n{dto.DescricaoVaga}\n\nOtimize este resumo profissional para se alinhar melhor com a vaga:\n\n{perfil.ObjetivosProfissionais}";
+            resumoOtimizado = await _openAIService.OptimizarTextoAsync(perfil.ObjetivosProfissionais, dto.DescricaoVaga);
+        }
+        catch (Exception ex)
+        {
+            // Se houver erro na IA, usa o conteúdo original
+            resumoOtimizado = perfil.ObjetivosProfissionais;
+        }
 
         var secoes = new CurriculoSecoesDto
         {
@@ -54,7 +79,7 @@ public class CurriculoService : ICurriculoService
             },
             ResumoBio = new ResumoBioDto
             {
-                Conteudo = perfil.ObjetivosProfissionais
+                Conteudo = resumoOtimizado
             },
             Experiencias = perfil.Experiencias.Select(e => new ExperienciaGeradaDto
             {
@@ -79,8 +104,6 @@ public class CurriculoService : ICurriculoService
                 DataConclusao = f.DataConclusao
             }).ToList()
         };
-
-        // TODO: Update cabecalho.Titulo based on job description + AI
 
         return new GerarCurriculoResponseDto
         {
@@ -188,11 +211,7 @@ public class CurriculoService : ICurriculoService
         try
         {
             var secoes = JsonSerializer.Deserialize<CurriculoSecoesDto>(curriculo.SecoesJson) ?? new CurriculoSecoesDto();
-            var html = ConvertCVToHtml(secoes, curriculo.Titulo);
-            
-            // Convert HTML to DOCX (simple approach - in production use DocumentFormat.OpenXml)
-            var docxBytes = Encoding.UTF8.GetBytes(html);
-            return docxBytes;
+            return GenerateDocxFromCV(secoes);
         }
         catch (Exception ex)
         {
@@ -211,11 +230,7 @@ public class CurriculoService : ICurriculoService
         try
         {
             var secoes = JsonSerializer.Deserialize<CurriculoSecoesDto>(curriculo.SecoesJson) ?? new CurriculoSecoesDto();
-            var html = ConvertCVToHtml(secoes, curriculo.Titulo);
-            
-            // Convert HTML to PDF (in production use SelectPdf, iTextSharp, etc.)
-            var pdfBytes = Encoding.UTF8.GetBytes(html);
-            return pdfBytes;
+            return GeneratePdfFromCV(secoes);
         }
         catch (Exception ex)
         {
@@ -223,124 +238,245 @@ public class CurriculoService : ICurriculoService
         }
     }
 
-    private string ConvertCVToHtml(CurriculoSecoesDto secoes, string titulo)
+    private byte[] GenerateDocxFromCV(CurriculoSecoesDto secoes)
     {
-        var html = new StringBuilder();
-        html.AppendLine("<!DOCTYPE html>");
-        html.AppendLine("<html>");
-        html.AppendLine("<head>");
-        html.AppendLine("<meta charset='UTF-8'>");
-        html.AppendLine("<title>Currículo</title>");
-        html.AppendLine("<style>");
-        html.AppendLine("body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 40px; }");
-        html.AppendLine("h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; text-align: center; }");
-        html.AppendLine("h2 { color: #34495e; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #bdc3c7; }");
-        html.AppendLine("h3 { color: #34495e; margin-top: 15px; margin-bottom: 5px; }");
-        html.AppendLine(".header { text-align: center; margin-bottom: 20px; }");
-        html.AppendLine(".section { margin-bottom: 20px; }");
-        html.AppendLine(".job { margin-bottom: 15px; }");
-        html.AppendLine(".date { color: #7f8c8d; font-size: 0.9em; }");
-        html.AppendLine("ul { list-style-type: disc; margin-left: 20px; }");
-        html.AppendLine("p { margin: 5px 0; }");
-        html.AppendLine("</style>");
-        html.AppendLine("</head>");
-        html.AppendLine("<body>");
-        
-        // Header
-        html.AppendLine("<div class='header'>");
-        html.AppendLine($"<h1>{secoes.Cabecalho.Nome}</h1>");
-        html.AppendLine($"<p><strong>{secoes.Cabecalho.Titulo}</strong></p>");
-        if (!string.IsNullOrEmpty(secoes.Cabecalho.Email))
-            html.AppendLine($"<p>{secoes.Cabecalho.Email}</p>");
-        if (!string.IsNullOrEmpty(secoes.Cabecalho.Telefone))
-            html.AppendLine($"<p>{secoes.Cabecalho.Telefone}</p>");
-        if (!string.IsNullOrEmpty(secoes.Cabecalho.Localizacao))
-            html.AppendLine($"<p>{secoes.Cabecalho.Localizacao}</p>");
-        html.AppendLine("</div>");
-
-        // Bio
-        if (!string.IsNullOrEmpty(secoes.ResumoBio?.Conteudo))
+        using (var memoryStream = new MemoryStream())
         {
-            html.AppendLine("<div class='section'>");
-            html.AppendLine("<h2>Resumo Profissional</h2>");
-            html.AppendLine($"<p>{secoes.ResumoBio.Conteudo}</p>");
-            html.AppendLine("</div>");
-        }
+            using (var wordDoc = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document))
+            {
+                var mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new WordDocument();
+                var body = mainPart.Document.AppendChild(new Body());
 
-        // Experiências
-        if (secoes.Experiencias?.Count > 0)
+                // Nome (h1 equivalent)
+                var nomePara = new WordParagraph();
+                var nomeRun = new Run();
+                nomeRun.AppendChild(new RunProperties { Bold = new Bold(), FontSize = new FontSize { Val = "28" } });
+                nomeRun.AppendChild(new WordText(secoes.Cabecalho?.Nome ?? "Currículo"));
+                nomePara.AppendChild(nomeRun);
+                nomePara.ParagraphProperties = new ParagraphProperties { Justification = new Justification { Val = JustificationValues.Center } };
+                body.AppendChild(nomePara);
+
+                // Contato
+                var contactText = new List<string>();
+                if (!string.IsNullOrEmpty(secoes.Cabecalho?.Email)) contactText.Add(secoes.Cabecalho.Email);
+                if (!string.IsNullOrEmpty(secoes.Cabecalho?.Telefone)) contactText.Add(secoes.Cabecalho.Telefone);
+                if (!string.IsNullOrEmpty(secoes.Cabecalho?.Localizacao)) contactText.Add(secoes.Cabecalho.Localizacao);
+
+                if (contactText.Count > 0)
+                {
+                    var contactPara = new WordParagraph(new Run(new WordText(string.Join(" | ", contactText))));
+                    contactPara.ParagraphProperties = new ParagraphProperties { Justification = new Justification { Val = JustificationValues.Center } };
+                    body.AppendChild(contactPara);
+                }
+
+                body.AppendChild(new WordParagraph());
+
+                // Resumo
+                if (!string.IsNullOrEmpty(secoes.ResumoBio?.Conteudo))
+                {
+                    AddWordSection(body, "Resumo Profissional", secoes.ResumoBio.Conteudo);
+                }
+
+                // Experiência
+                if (secoes.Experiencias?.Count > 0)
+                {
+                    body.AppendChild(CreateWordHeading("Experiência Profissional"));
+                    foreach (var exp in secoes.Experiencias)
+                    {
+                        var jobPara = new WordParagraph();
+                        var jobRun = new Run(new WordText(exp.Cargo));
+                        jobRun.RunProperties = new RunProperties { Bold = new Bold() };
+                        jobPara.AppendChild(jobRun);
+                        body.AppendChild(jobPara);
+
+                        body.AppendChild(new WordParagraph(new Run(new WordText($"{exp.Empresa}"))));
+                        body.AppendChild(new WordParagraph(new Run(new WordText($"{exp.DataInicio:MMM yyyy} - {(exp.DataFim?.ToString("MMM yyyy") ?? "Presente")}"))));
+
+                        if (!string.IsNullOrEmpty(exp.Descricao))
+                            body.AppendChild(new WordParagraph(new Run(new WordText(exp.Descricao))));
+
+                        body.AppendChild(new WordParagraph());
+                    }
+                }
+
+                // Competências
+                if (secoes.Competencias != null && (secoes.Competencias.Tecnicas?.Count > 0 || secoes.Competencias.Comportamentais?.Count > 0))
+                {
+                    body.AppendChild(CreateWordHeading("Competências"));
+
+                    if (secoes.Competencias.Tecnicas?.Count > 0)
+                    {
+                        body.AppendChild(new WordParagraph(new Run(new WordText("Técnicas: " + string.Join(", ", secoes.Competencias.Tecnicas)))));
+                    }
+
+                    if (secoes.Competencias.Comportamentais?.Count > 0)
+                    {
+                        body.AppendChild(new WordParagraph(new Run(new WordText("Comportamentais: " + string.Join(", ", secoes.Competencias.Comportamentais)))));
+                    }
+
+                    body.AppendChild(new WordParagraph());
+                }
+
+                // Formação
+                if (secoes.Formacoes?.Count > 0)
+                {
+                    body.AppendChild(CreateWordHeading("Formação"));
+                    foreach (var f in secoes.Formacoes)
+                    {
+                        var coursePara = new WordParagraph();
+                        var courseRun = new Run(new WordText(f.Curso));
+                        courseRun.RunProperties = new RunProperties { Bold = new Bold() };
+                        coursePara.AppendChild(courseRun);
+                        body.AppendChild(coursePara);
+
+                        body.AppendChild(new WordParagraph(new Run(new WordText($"{f.Instituicao}"))));
+                        body.AppendChild(new WordParagraph(new Run(new WordText($"{f.DataInicio:yyyy} - {(f.DataConclusao?.ToString("yyyy") ?? "Em andamento")}"))));
+                        body.AppendChild(new WordParagraph());
+                    }
+                }
+
+                wordDoc.Save();
+            }
+
+            return memoryStream.ToArray();
+        }
+    }
+
+    private void AddWordSection(Body body, string title, string content)
+    {
+        body.AppendChild(CreateWordHeading(title));
+        body.AppendChild(new WordParagraph(new Run(new WordText(content))));
+        body.AppendChild(new WordParagraph());
+    }
+
+    private WordParagraph CreateWordHeading(string text)
+    {
+        var heading = new WordParagraph();
+        var run = new Run(new WordText(text));
+        run.RunProperties = new RunProperties { Bold = new Bold(), FontSize = new FontSize { Val = "24" } };
+        heading.AppendChild(run);
+        heading.ParagraphProperties = new ParagraphProperties { SpacingBetweenLines = new SpacingBetweenLines { Before = "120", After = "120" } };
+        return heading;
+    }
+
+    private byte[] GeneratePdfFromCV(CurriculoSecoesDto secoes)
+    {
+        using (var memoryStream = new MemoryStream())
         {
-            html.AppendLine("<div class='section'>");
-            html.AppendLine("<h2>Experiência Profissional</h2>");
-            foreach (var exp in secoes.Experiencias)
+            using (var pdfWriter = new PdfWriter(memoryStream))
             {
-                html.AppendLine("<div class='job'>");
-                html.AppendLine($"<h3>{exp.Cargo}</h3>");
-                html.AppendLine($"<p><strong>{exp.Empresa}</strong></p>");
-                html.AppendLine($"<p class='date'>{exp.DataInicio:yyyy-MM-dd} a {(exp.DataFim?.ToString("yyyy-MM-dd") ?? "Presente")}</p>");
-                if (!string.IsNullOrEmpty(exp.Descricao))
-                    html.AppendLine($"<p>{exp.Descricao}</p>");
-                html.AppendLine("</div>");
+                using (var pdfDocObj = new iText.Kernel.Pdf.PdfDocument(pdfWriter))
+                {
+                    var document = new PdfDocument(pdfDocObj);
+                    document.SetMargins(36, 36, 36, 36);
+
+                    // Nome
+                    document.Add(new PdfParagraph(secoes.Cabecalho?.Nome ?? "Currículo")
+                        .SetFontSize(24)
+                        .SetBold()
+                        .SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER));
+
+                    // Contato
+                    var contactList = new List<string>();
+                    if (!string.IsNullOrEmpty(secoes.Cabecalho?.Email)) contactList.Add(secoes.Cabecalho.Email);
+                    if (!string.IsNullOrEmpty(secoes.Cabecalho?.Telefone)) contactList.Add(secoes.Cabecalho.Telefone);
+                    if (!string.IsNullOrEmpty(secoes.Cabecalho?.Localizacao)) contactList.Add(secoes.Cabecalho.Localizacao);
+
+                    if (contactList.Count > 0)
+                    {
+                        document.Add(new PdfParagraph(string.Join(" | ", contactList))
+                            .SetTextAlignment(iText.Layout.Properties.TextAlignment.CENTER)
+                            .SetFontSize(10));
+                    }
+
+                    document.Add(new PdfParagraph());
+
+                    // Resumo
+                    if (!string.IsNullOrEmpty(secoes.ResumoBio?.Conteudo))
+                    {
+                        document.Add(new PdfParagraph("RESUMO PROFISSIONAL").SetFontSize(12).SetBold());
+                        document.Add(new PdfParagraph(secoes.ResumoBio.Conteudo).SetFontSize(10));
+                        document.Add(new PdfParagraph());
+                    }
+
+                    // Experiência
+                    if (secoes.Experiencias?.Count > 0)
+                    {
+                        document.Add(new PdfParagraph("EXPERIÊNCIA PROFISSIONAL").SetFontSize(12).SetBold());
+                        foreach (var exp in secoes.Experiencias)
+                        {
+                            document.Add(new PdfParagraph(exp.Cargo).SetFontSize(11).SetBold());
+                            document.Add(new PdfParagraph($"{exp.Empresa}")
+                                .SetFontSize(10)
+                                .SetMarginLeft(10));
+                            document.Add(new PdfParagraph($"{exp.DataInicio:MMM yyyy} - {(exp.DataFim?.ToString("MMM yyyy") ?? "Presente")}")
+                                .SetFontSize(9)
+                                .SetMarginLeft(10));
+
+                            if (!string.IsNullOrEmpty(exp.Descricao))
+                            {
+                                document.Add(new PdfParagraph(exp.Descricao)
+                                    .SetFontSize(10)
+                                    .SetMarginLeft(10));
+                            }
+                        }
+                        document.Add(new PdfParagraph());
+                    }
+
+                    // Competências
+                    if (secoes.Competencias != null && (secoes.Competencias.Tecnicas?.Count > 0 || secoes.Competencias.Comportamentais?.Count > 0))
+                    {
+                        document.Add(new PdfParagraph("COMPETÊNCIAS").SetFontSize(12).SetBold());
+
+                        if (secoes.Competencias.Tecnicas?.Count > 0)
+                        {
+                            document.Add(new PdfParagraph("Técnicas: " + string.Join(", ", secoes.Competencias.Tecnicas))
+                                .SetFontSize(10)
+                                .SetMarginLeft(10));
+                        }
+
+                        if (secoes.Competencias.Comportamentais?.Count > 0)
+                        {
+                            document.Add(new PdfParagraph("Comportamentais: " + string.Join(", ", secoes.Competencias.Comportamentais))
+                                .SetFontSize(10)
+                                .SetMarginLeft(10));
+                        }
+
+                        document.Add(new PdfParagraph());
+                    }
+
+                    // Formação
+                    if (secoes.Formacoes?.Count > 0)
+                    {
+                        document.Add(new PdfParagraph("FORMAÇÃO").SetFontSize(12).SetBold());
+                        foreach (var f in secoes.Formacoes)
+                        {
+                            document.Add(new PdfParagraph(f.Curso).SetFontSize(11).SetBold());
+                            document.Add(new PdfParagraph($"{f.Instituicao}")
+                                .SetFontSize(10)
+                                .SetMarginLeft(10));
+                            document.Add(new PdfParagraph($"{f.DataInicio:yyyy} - {(f.DataConclusao?.ToString("yyyy") ?? "Em andamento")}")
+                                .SetFontSize(9)
+                                .SetMarginLeft(10));
+                        }
+                    }
+
+                    document.Close();
+                }
             }
-            html.AppendLine("</div>");
+
+            return memoryStream.ToArray();
         }
+    }
 
-        // Competências
-        if (secoes.Competencias != null)
-        {
-            html.AppendLine("<div class='section'>");
-            html.AppendLine("<h2>Competências</h2>");
-            
-            if (secoes.Competencias.Tecnicas?.Count > 0)
-            {
-                html.AppendLine("<h3>Técnicas</h3>");
-                html.AppendLine("<p>");
-                html.AppendLine(string.Join(", ", secoes.Competencias.Tecnicas));
-                html.AppendLine("</p>");
-            }
-            
-            if (secoes.Competencias.Comportamentais?.Count > 0)
-            {
-                html.AppendLine("<h3>Comportamentais</h3>");
-                html.AppendLine("<p>");
-                html.AppendLine(string.Join(", ", secoes.Competencias.Comportamentais));
-                html.AppendLine("</p>");
-            }
-            
-            html.AppendLine("</div>");
-        }
-
-        // Formações
-        if (secoes.Formacoes?.Count > 0)
-        {
-            html.AppendLine("<div class='section'>");
-            html.AppendLine("<h2>Formação</h2>");
-            foreach (var f in secoes.Formacoes)
-            {
-                html.AppendLine($"<h3>{f.Curso}</h3>");
-                html.AppendLine($"<p><strong>{f.Instituicao}</strong></p>");
-                html.AppendLine($"<p class='date'>{f.DataInicio:yyyy-MM-dd} a {(f.DataConclusao?.ToString("yyyy-MM-dd") ?? "Em andamento")}</p>");
-            }
-            html.AppendLine("</div>");
-        }
-
-        // Certificações
-        if (secoes.Certificacoes?.Count > 0)
-        {
-            html.AppendLine("<div class='section'>");
-            html.AppendLine("<h2>Certificações</h2>");
-            html.AppendLine("<ul>");
-            foreach (var cert in secoes.Certificacoes)
-            {
-                html.AppendLine($"<li>{cert}</li>");
-            }
-            html.AppendLine("</ul>");
-            html.AppendLine("</div>");
-        }
-
-        html.AppendLine("</body>");
-        html.AppendLine("</html>");
-
-        return html.ToString();
+    private WordParagraph AddHeadingWord(string text)
+    {
+        var heading = new WordParagraph();
+        var run = new Run(new WordText(text));
+        run.RunProperties = new RunProperties { Bold = new Bold(), FontSize = new FontSize { Val = "24" } };
+        heading.AppendChild(run);
+        heading.ParagraphProperties = new ParagraphProperties { SpacingBetweenLines = new SpacingBetweenLines { Before = "120", After = "120" } };
+        return heading;
     }
 }
