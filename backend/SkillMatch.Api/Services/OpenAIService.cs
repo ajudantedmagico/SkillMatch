@@ -23,10 +23,14 @@ public class OpenAIService : IOpenAIService
         _configuration = configuration;
         _logger = logger;
         _apiKey = configuration["OpenAI:ApiKey"] ?? throw new InvalidOperationException("OpenAI:ApiKey não configurada");
+        
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            throw new InvalidOperationException("OpenAI:ApiKey está vazio");
+            
         _model = configuration["OpenAI:Model"] ?? "gpt-3.5-turbo";
         _maxTokens = int.Parse(configuration["OpenAI:MaxTokens"] ?? "2000");
-
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+        
+        _logger.LogInformation("OpenAI Service inicializado com modelo: {model}", _model);
     }
 
     public async Task<string> GenerarCVAsync(string prompt)
@@ -45,19 +49,28 @@ public class OpenAIService : IOpenAIService
                 max_tokens = _maxTokens
             };
 
-            var response = await _httpClient.PostAsJsonAsync("https://api.openai.com/v1/chat/completions", request);
+            _logger.LogInformation("Chamando OpenAI API para gerar CV...");
+            var response = await _httpClient.PostAsJsonAsync(
+                "https://api.openai.com/v1/chat/completions", 
+                request,
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }
+            );
             
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"Erro da API OpenAI: {response.StatusCode} - {errorContent}");
-                throw new InvalidOperationException($"Erro ao chamar OpenAI API: {response.StatusCode}");
+                _logger.LogError("Erro da API OpenAI: {statusCode} - {error}", response.StatusCode, errorContent);
+                throw new InvalidOperationException($"Erro ao chamar OpenAI API: {response.StatusCode} - {errorContent}");
             }
 
             var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>();
             if (result?.Choices?.FirstOrDefault()?.Message?.Content == null)
+            {
+                _logger.LogError("Resposta vazia da OpenAI API");
                 throw new InvalidOperationException("Resposta vazia da OpenAI API");
+            }
 
+            _logger.LogInformation("CV gerado com sucesso");
             return result.Choices[0].Message.Content;
         }
         catch (Exception ex)
@@ -69,6 +82,9 @@ public class OpenAIService : IOpenAIService
 
     public async Task<string> OptimizarTextoAsync(string texto, string contexto)
     {
+        if (string.IsNullOrWhiteSpace(texto))
+            return texto;
+            
         try
         {
             var prompt = $"Otimize o seguinte texto profissional para ser mais impactante considerando o contexto: {contexto}\n\nTexto: {texto}";
@@ -78,20 +94,38 @@ public class OpenAIService : IOpenAIService
                 model = _model,
                 messages = new[]
                 {
-                    new { role = "system", content = "Você é um especialista em copywriting profissional." },
+                    new { role = "system", content = "Você é um especialista em copywriting profissional. Retorne apenas o texto otimizado, sem explicações adicionais." },
                     new { role = "user", content = prompt }
                 },
                 temperature = 0.7,
                 max_tokens = _maxTokens
             };
 
-            var response = await _httpClient.PostAsJsonAsync("https://api.openai.com/v1/chat/completions", request);
+            _logger.LogInformation("Otimizando texto com OpenAI...");
+            var response = await _httpClient.PostAsJsonAsync(
+                "https://api.openai.com/v1/chat/completions", 
+                request,
+                new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null }
+            );
             
             if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"Erro ao chamar OpenAI API: {response.StatusCode}");
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Erro ao otimizar com OpenAI: {statusCode} - {error}. Usando texto original.", response.StatusCode, errorContent);
+                return texto;
+            }
 
             var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>();
-            return result?.Choices?.FirstOrDefault()?.Message?.Content ?? texto;
+            var textoOtimizado = result?.Choices?.FirstOrDefault()?.Message?.Content;
+            
+            if (string.IsNullOrWhiteSpace(textoOtimizado))
+            {
+                _logger.LogWarning("Resposta vazia da OpenAI ao otimizar. Usando texto original.");
+                return texto;
+            }
+
+            _logger.LogInformation("Texto otimizado com sucesso");
+            return textoOtimizado;
         }
         catch (Exception ex)
         {

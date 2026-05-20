@@ -1,0 +1,212 @@
+[33mcommit 1ace1adbc0c354e6aa9da97df8febcff74449702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon May 18 12:51:16 2026 -0300
+
+    fix(config): update OpenAI ApiKey to placeholder for security
+
+[33mcommit 8f5409c1e63be5cc6aaf1a649797c0603131d8cd[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon May 18 12:47:49 2026 -0300
+
+    Refactor code structure for improved readability and maintainability
+
+[33mcommit 2fec058b7e88c429205189a137be189698675e99[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Sun May 17 23:01:46 2026 -0300
+
+    style(ui): atualiza estilização e ajuste da imagem
+
+[33mcommit 03ee7bdb06aef805aa40bc9c9ebd8d6d11b73364[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Sun May 17 21:32:19 2026 -0300
+
+    fix(code): corrige erro de sintaxe causado por chave faltando
+
+[33mcommit 91049fbecac26f0ddbe2e52aa555312eddca105a[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Wed May 6 10:08:45 2026 -0300
+
+    feat(curriculo): add functionality to download CV in Word and PDF formats; implement OpenAI service for CV generation and text optimization
+
+[33mcommit c6f3cf47e904d6b3c9d953caf074c4bb1cc0291e[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Wed May 6 09:40:26 2026 -0300
+
+    style(assets): substitui imagem removendo antiga e adicionando nova
+
+[33mcommit f098b5fff77cfabc78cd71d03c1449d88dee61a5[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Wed May 6 09:39:15 2026 -0300
+
+    style(ui): ajusta altura e posicionamento do botão para centralização
+
+[33mcommit 15cc597f3a860cdf0cc6786caf347ca14e3b93c7[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 23:31:48 2026 -0300
+
+    fix(auth): corrige erro no logout e redirecionamento para login
+
+[33mcommit 2f6e87cf40b6d4e3715f4ff06c452b63ef452982[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 23:19:01 2026 -0300
+
+    fix(perfil): corrige responsividade e quebra de layout na página
+    
+    Co-authored-by: Copilot <copilot@github.com>
+
+[33mcommit 193a6c4684c5a3496fc062a2634593bfe25ee48d[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 23:07:33 2026 -0300
+
+    feat(conta): adiciona funcionalidade de foto de perfil
+
+[33mcommit 8a1f3a3ce950d6cd344a7ca72de27c3e39ab4bf1[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 22:41:45 2026 -0300
+
+    style(ui): altera estilização dos botões
+
+[33mcommit b24fadc6a6cadaa72d97740c44db402bddea70f0[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 22:41:25 2026 -0300
+
+    style(ui): altera estilização dos botões
+    
+    Co-authored-by: Copilot <copilot@github.com>
+
+[33mcommit 6106cfd294aae39d43656ad40c4396ba8cf38198[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Tue May 5 22:26:04 2026 -0300
+
+    feat(assets): adiciona imagem ao projeto
+
+[33mcommit fc00080be0114980ea8bf223aaccf8ba874155af[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Tue Apr 28 19:51:17 2026 -0300
+
+    fix: Comment out HTTPS redirection and remove unused HTTPS profile from launch settings
+
+[33mcommit 433392570b72cceddc4b2e28684573659e463429[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Tue Apr 28 19:34:55 2026 -0300
+
+    feat(ui): update app layout and styles for improved user experience
+
+[33mcommit 8dcfe88474542409de88e7e87485dd3026d8c15c[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon Apr 27 15:29:15 2026 -0300
+
+    feat: Implementar funcionalidades de alteração de senha e deleção de conta no backend e frontend
+    
+    - Adicionadas rotas para alterar senha e deletar conta no AuthController.
+    - Implementados DTOs para alteração de senha e deleção de conta.
+    - Atualizado AuthService para incluir lógica de alteração de senha e deleção de conta.
+    - Atualizado api.js para incluir métodos para alterar senha e deletar conta.
+    - Criada nova página "conta.html" com interface para gerenciamento de conta.
+    - Atualizado estilo CSS para incluir novos elementos de interface.
+    - Atualizada documentação da API para refletir novas funcionalidades.
+
+[33mcommit 7ed48d50c98703f817be5d4e1810be684384785d[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon Apr 27 09:43:07 2026 -0300
+
+    fix: Update stylesheet paths in multiple HTML files
+    
+    Co-authored-by: Copilot <copilot@github.com>
+
+[33mcommit e2c692704e421e8f14930cf17f42bdb697efc4a0[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon Apr 27 09:38:35 2026 -0300
+
+    fix: Correct stylesheet path in app.html
+    
+    Co-authored-by: Copilot <copilot@github.com>
+
+[33mcommit c00ae44279c686f38616276249e066ccf763e9de[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Mon Apr 27 07:52:50 2026 -0300
+
+    feat: Implement Curriculum and Profile Management
+    
+    - Added CurriculoController for handling curriculum generation, saving, and listing.
+    - Introduced PerfilController for managing user profiles.
+    - Created DTOs for Profile and Curriculum data transfer.
+    - Implemented database migrations to add Curriculum and Profile tables.
+    - Developed models for Curriculum, Experience, and Education.
+    - Created services for Curriculum and Profile management with necessary business logic.
+    - Integrated JSON serialization for storing complex data structures in the database.
+
+[33mcommit 445af60462fb2517ae8ff52b85e260841ac88d43[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Fri Apr 17 12:19:43 2026 -0300
+
+    feat(ui): adiciona estilos das páginas
+
+[33mcommit 0d403a1d56477275c64c17b796a1473123e4bf80[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Fri Apr 17 12:19:04 2026 -0300
+
+    feat(pwa): adiciona manifest.json
+
+[33mcommit 8dd17815b80c862a77eab8414dd5e1eadef068b4[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Fri Apr 17 12:18:16 2026 -0300
+
+    feat(pwa): adiciona service worker com cache offline
+
+[33mcommit c0317b248cea617e7d73759c54d8a3ab12e6b11b[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Fri Apr 17 12:16:23 2026 -0300
+
+    feat(cv): cria página de currículo
+
+[33mcommit 4391399f8fd0e53e60bb851fc26789d7b3974bb9[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Fri Apr 17 12:15:48 2026 -0300
+
+    feat(chat): cria página de chat
+
+[33mcommit eb2f56c9551d4cdfb45a469cad94a2f9b006c69b[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Sun Apr 12 20:07:09 2026 -0300
+
+    docs(README): enhance project documentation with detailed setup instructions and project structure
+
+[33mcommit 4524870876d8288a1b1989dbc1ac988810180570[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Sun Apr 12 20:04:07 2026 -0300
+
+    chore(gitignore): update .gitignore to include additional files and directories
+
+[33mcommit 5b3151357a65a0722ec5986a4fae4f6e7cbe0e4d[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Sun Apr 12 20:01:36 2026 -0300
+
+    chore(db): remove unused SQLite database files
+
+[33mcommit 7282d5a8cbd4776d295e7d919d44748312dedc06[m
+Author: ajudantedemagico <jqlngnclvz@gmail.com>
+Date:   Sun Apr 12 19:58:49 2026 -0300
+
+    Refactor code structure for improved readability and maintainability
+
+[33mcommit e3e6a063b740f43eede652370701c10c847c4087[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Wed Apr 8 13:22:47 2026 -0300
+
+    feat(historico): página de histórico de currículos
+
+[33mcommit c2523c12dc77cb66c4c5cac0c073caee9a6dd483[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Wed Apr 8 10:55:43 2026 -0300
+
+    feat(perfil): página de perfil do usuário
+
+[33mcommit 6549ef465aaf557724f5a6439678f99f95d46bd2[m
+Author: Juhh006 <julyadaniellamartinezandrade@gmail.com>
+Date:   Mon Mar 30 20:38:52 2026 -0300
+
+    style(auth): melhora layout da página de login e cadastro
+
+[33mcommit a2be5e7c9073e02305e1ae57d807dda1a64db107[m
+Author: Juhh006 <julyadanie

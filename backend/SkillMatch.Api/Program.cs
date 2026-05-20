@@ -54,7 +54,22 @@ builder.Services.AddScoped<IPasswordRecoveryService, PasswordRecoveryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPerfilService, PerfilService>();
 builder.Services.AddScoped<ICurriculoService, CurriculoService>();
-builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
+
+// Configure HttpClient for OpenAI with Authentication Header
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>((sp, client) =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var apiKey = config["OpenAI:ApiKey"];
+    
+    if (!string.IsNullOrWhiteSpace(apiKey))
+    {
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+    }
+})
+.ConfigureHttpClient(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
 
@@ -73,10 +88,23 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+
+// Serve static files from frontend folder
+var frontendPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "frontend");
+var staticFileOptions = new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(frontendPath),
+    RequestPath = new Microsoft.AspNetCore.Http.PathString("")
+};
+app.UseStaticFiles(staticFileOptions);
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Fallback to index.html for SPA
+app.MapFallbackToFile("index.html", staticFileOptions);
 
 app.Run();
 
