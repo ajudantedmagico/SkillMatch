@@ -79,9 +79,9 @@ Buscamos Desenvolvedor(a) Back-end C# para integrar nosso time. Requisitos: .NET
     showLoading('Gerando seu currículo com IA...\nIsso pode levar alguns segundos.');
 
     try {
-      const secoes = await api.gerarCV(descricao, consentimento);
+      const response = await api.gerarCV(descricao, consentimento);
       // Salva temporariamente para a tela de edição
-      sessionStorage.setItem('cv_secoes', JSON.stringify(secoes));
+      sessionStorage.setItem('cv_secoes', JSON.stringify(response.secoes));
       sessionStorage.setItem('cv_vaga', descricao);
       hideLoading();
       window.location.href = 'cv-editar.html';

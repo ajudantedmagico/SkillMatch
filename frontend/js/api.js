@@ -17,19 +17,26 @@ const api = {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    try {
+      const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
-    if (res.status === 401) {
-      this.clearToken();
-      window.location.href = '/index.html';
-      return;
+      if (res.status === 401) {
+        this.clearToken();
+        window.location.href = '/index.html';
+        return;
+      }
+
+      if (res.status === 204) return null;
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.message || `Erro ${res.status}`);
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Erro de conexão. Verifique se o servidor está rodando em http://localhost:5000');
+      }
+      throw error;
     }
-
-    if (res.status === 204) return null;
-
-    const data = await res.json().catch(() => null);
-    if (!res.ok) throw new Error(data?.message || `Erro ${res.status}`);
-    return data;
   },
 
   // ── Auth ──

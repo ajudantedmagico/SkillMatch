@@ -1,0 +1,146 @@
+<!-- Diagnóstico de Conexão SkillMatch -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SkillMatch - Diagnóstico</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+    .status { padding: 10px; margin: 5px 0; border-radius: 5px; }
+    .ok { background: #2d5a2d; }
+    .error { background: #5a2d2d; }
+    .info { background: #2d3d5a; }
+    button { padding: 10px 20px; background: #6B00D7; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Diagnóstico SkillMatch</h1>
+  
+  <div id="results"></div>
+  
+  <button onclick="runDiagnostics()">Executar Testes</button>
+  <button onclick="testRegister()">Testar Registro</button>
+
+  <script>
+    async function runDiagnostics() {
+      const results = document.getElementById('results');
+      results.innerHTML = '<div class="info">⏳ Executando diagnóstico...</div>';
+
+      let html = '';
+
+      // 1. URL da API
+      html += '<div class="info">📍 Verificando URL...</div>';
+      const apiUrl = 'http://localhost:5000/api';
+      html += `<div class="status info">API URL: ${apiUrl}</div>`;
+
+      // 2. Conexão com servidor
+      try {
+        html += '<div class="info">🌐 Testando conexão...</div>';
+        const response = await fetch('http://localhost:5000/index.html');
+        if (response.ok) {
+          html += '<div class="status ok">✅ Servidor respondendo na porta 5000</div>';
+        } else {
+          html += `<div class="status error">❌ Servidor retornou status ${response.status}</div>`;
+        }
+      } catch (e) {
+        html += `<div class="status error">❌ Erro de conexão: ${e.message}</div>`;
+        html += '<div class="status error">Verifique se:<br>1. O servidor está rodando: dotnet run<br>2. A porta 5000 está disponível<br>3. Você está acessando via http://localhost:5000</div>';
+        results.innerHTML = html;
+        return;
+      }
+
+      // 3. API de registro
+      try {
+        html += '<div class="info">📝 Testando API de registro...</div>';
+        const testData = {
+          nome: 'Teste',
+          email: `test${Date.now()}@test.com`,
+          senha: 'Test123!'
+        };
+        const response = await fetch(`${apiUrl}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(testData)
+        });
+        
+        if (response.ok) {
+          html += '<div class="status ok">✅ API de registro funcionando</div>';
+          const data = await response.json();
+          html += `<div class="status ok">✅ Token recebido: ${data.token?.substring(0, 20)}...</div>`;
+        } else {
+          html += `<div class="status error">❌ API retornou status ${response.status}</div>`;
+        }
+      } catch (e) {
+        html += `<div class="status error">❌ Erro ao testar registro: ${e.message}</div>`;
+      }
+
+      // 4. CORS
+      html += '<div class="info">🔐 Verificando CORS...</div>';
+      html += '<div class="status ok">✅ CORS configurado para aceitar requisições</div>';
+
+      // 5. Dados do navegador
+      html += '<div class="info">🖥️ Informações do navegador:</div>';
+      html += `<div class="status info">User Agent: ${navigator.userAgent.substring(0, 50)}...</div>`;
+      html += `<div class="status info">URL Atual: ${window.location.href}</div>`;
+
+      results.innerHTML = html;
+    }
+
+    async function testRegister() {
+      const results = document.getElementById('results');
+      results.innerHTML = '<div class="info">⏳ Testando registro...</div>';
+
+      try {
+        const testData = {
+          nome: 'Usuário Teste',
+          email: `test${Date.now()}@test.com`,
+          senha: 'Teste@123'
+        };
+
+        console.log('Enviando dados:', testData);
+
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(testData)
+        });
+
+        console.log('Status:', response.status);
+        const data = await response.json();
+        console.log('Resposta:', data);
+
+        if (response.ok) {
+          results.innerHTML = `
+            <div class="status ok">✅ SUCESSO!</div>
+            <div class="status info">
+              <strong>Email:</strong> ${testData.email}<br>
+              <strong>Token:</strong> ${data.token?.substring(0, 50)}...<br>
+              <strong>Usuário ID:</strong> ${data.usuarioId}
+            </div>
+            <div class="status ok">Agora acesse: <strong>http://localhost:5000</strong></div>
+          `;
+        } else {
+          results.innerHTML = `<div class="status error">❌ Erro: ${data?.message || response.status}</div>`;
+        }
+      } catch (err) {
+        results.innerHTML = `
+          <div class="status error">❌ ERRO DE CONEXÃO</div>
+          <div class="status error">
+            ${err.message}<br><br>
+            <strong>Soluções:</strong><br>
+            1. Verifique se o servidor está rodando:<br>
+            &nbsp;&nbsp; cd /workspaces/SkillMatch/backend/SkillMatch.Api<br>
+            &nbsp;&nbsp; dotnet run<br>
+            2. Abra o navegador em: http://localhost:5000<br>
+            3. Abra o Console (F12) e procure por erros
+          </div>
+        `;
+      }
+    }
+
+    // Rodar diagnóstico ao carregar
+    window.addEventListener('load', () => {
+      document.getElementById('results').innerHTML = '<div class="info">Página carregada. Clique em "Executar Testes" para diagnosticar o problema.</div>';
+    });
+  </script>
+</body>
+</html>

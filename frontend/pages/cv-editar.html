@@ -212,11 +212,11 @@
           competenciasTecnicas: competencias,
           softSkills
         },
-        resumoProfissionalEditado: flags.resumo,
+        cabecalhoEditado: false,
+        resumoBioEditado: flags.resumo,
         experienciaEditada: flags.exp,
-        formacaoEditada: flags.form,
         competenciasEditadas: flags.comp,
-        softSkillsEditadas: flags.soft
+        formacaoEditada: flags.form
       });
       sessionStorage.removeItem('cv_secoes');
       sessionStorage.removeItem('cv_vaga');
@@ -249,11 +249,11 @@
             competenciasTecnicas: competencias,
             softSkills
           },
-          resumoProfissionalEditado: flags.resumo,
+          cabecalhoEditado: false,
+          resumoBioEditado: flags.resumo,
           experienciaEditada: flags.exp,
-          formacaoEditada: flags.form,
           competenciasEditadas: flags.comp,
-          softSkillsEditadas: flags.soft
+          formacaoEditada: flags.form
         });
         cvId = result.id;
         sessionStorage.setItem('cv_id', cvId);
@@ -296,11 +296,11 @@
             competenciasTecnicas: competencias,
             softSkills
           },
-          resumoProfissionalEditado: flags.resumo,
+          cabecalhoEditado: false,
+          resumoBioEditado: flags.resumo,
           experienciaEditada: flags.exp,
-          formacaoEditada: flags.form,
           competenciasEditadas: flags.comp,
-          softSkillsEditadas: flags.soft
+          formacaoEditada: flags.form
         });
         cvId = result.id;
         sessionStorage.setItem('cv_id', cvId);
