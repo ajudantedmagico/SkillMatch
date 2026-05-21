@@ -22,7 +22,7 @@ namespace SkillMatch.Api.Services;
 
 public interface ICurriculoService
 {
-    Task<GerarCurriculoResponseDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto);
+    Task<GerarCurriculoResponseClienteDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto);
     Task<CurriculoDetalheDto?> SalvarCurriculoAsync(int usuarioId, SalvarCurriculoRequestDto dto);
     Task<List<CurriculoListaDto>> ListarCurriculosAsync(int usuarioId);
     Task<CurriculoDetalheDto?> GetCurriculoAsync(int usuarioId, int curriculoId);
@@ -43,7 +43,7 @@ public class CurriculoService : ICurriculoService
         _openAIService = openAIService;
     }
 
-    public async Task<GerarCurriculoResponseDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto)
+    public async Task<GerarCurriculoResponseClienteDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto)
     {
         if (!dto.ConsentimentoIA)
             throw new InvalidOperationException("Consentimento para IA é obrigatório");
@@ -66,49 +66,33 @@ public class CurriculoService : ICurriculoService
             resumoOtimizado = perfil.ObjetivosProfissionais;
         }
 
-        var secoes = new CurriculoSecoesDto
+        // Map to client-friendly DTO (with field names frontend expects)
+        var secoesCliente = new CurriculoSecoesClienteDto
         {
-            Cabecalho = new CabecalhoDto
-            {
-                Nome = perfil.Nome,
-                Email = perfil.Email,
-                Telefone = perfil.Telefone,
-                LinkedIn = perfil.LinkedIn,
-                Portfolio = perfil.Portfolio,
-                Localizacao = $"{perfil.Cidade}, {perfil.Estado}"
-            },
-            ResumoBio = new ResumoBioDto
-            {
-                Conteudo = resumoOtimizado
-            },
-            Experiencias = perfil.Experiencias.Select(e => new ExperienciaGeradaDto
+            ResumoProfissional = resumoOtimizado,
+            ExperienciaProfissional = perfil.Experiencias.Select(e => new ExperienciaClienteDto
             {
                 Empresa = e.Empresa,
                 Cargo = e.Cargo,
-                DataInicio = e.DataInicio,
-                DataFim = e.DataFim,
-                Descricao = e.Atividades,
-                Tecnologias = e.Tecnologias
+                Periodo = $"{e.DataInicio:MMM yyyy} - {(e.DataFim?.ToString("MMM yyyy") ?? "Presente")}",
+                Atividades = e.Atividades.Split('\n').Where(a => !string.IsNullOrWhiteSpace(a)).ToList(),
+                Resultados = e.Resultados
             }).ToList(),
-            Competencias = new CompetenciasDto
-            {
-                Tecnicas = perfil.CompetenciasTecnicas,
-                Comportamentais = perfil.SoftSkills
-            },
-            Formacoes = perfil.Formacoes.Select(f => new FormacaoGeradaDto
+            FormacaoAcademica = perfil.Formacoes.Select(f => new FormacaoClienteDto
             {
                 Instituicao = f.Instituicao,
                 Curso = f.Curso,
                 Tipo = f.Tipo,
-                DataInicio = f.DataInicio,
-                DataConclusao = f.DataConclusao
-            }).ToList()
+                Periodo = $"{f.DataInicio:MMM yyyy} - {(f.DataConclusao?.ToString("MMM yyyy") ?? "Em andamento")}"
+            }).ToList(),
+            CompetenciasTecnicas = perfil.CompetenciasTecnicas,
+            SoftSkills = perfil.SoftSkills
         };
 
-        return new GerarCurriculoResponseDto
+        return new GerarCurriculoResponseClienteDto
         {
             Titulo = $"CV - {perfil.Nome}",
-            Secoes = secoes
+            Secoes = secoesCliente
         };
     }
 

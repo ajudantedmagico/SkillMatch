@@ -160,3 +160,55 @@ public class CurriculoDetalheDto
     public bool CompetenciasEditadas { get; set; }
     public bool FormacaoEditada { get; set; }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// DTOs FOR FRONTEND (adapted field names)
+// ═══════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// DTO returned to frontend from GerarCurriculo endpoint
+/// Maps backend structure to frontend expected field names
+/// </summary>
+public class GerarCurriculoResponseClienteDto
+{
+    public string Titulo { get; set; } = string.Empty;
+    public CurriculoSecoesClienteDto Secoes { get; set; } = new();
+}
+
+/// <summary>
+/// Adapted curriculum sections for frontend consumption
+/// </summary>
+public class CurriculoSecoesClienteDto
+{
+    // Frontend expects resumoProfissional (not ResumoBio.Conteudo)
+    public string ResumoProfissional { get; set; } = string.Empty;
+    
+    // Frontend expects experienciaProfissional (not Experiencias)
+    public List<ExperienciaClienteDto> ExperienciaProfissional { get; set; } = [];
+    
+    // Frontend expects formacaoAcademica (not Formacoes)
+    public List<FormacaoClienteDto> FormacaoAcademica { get; set; } = [];
+    
+    // Frontend expects competenciasTecnicas (not Competencias.Tecnicas)
+    public List<string> CompetenciasTecnicas { get; set; } = [];
+    
+    // Frontend expects softSkills (not Competencias.Comportamentais)
+    public List<string> SoftSkills { get; set; } = [];
+}
+
+public class ExperienciaClienteDto
+{
+    public string Empresa { get; set; } = string.Empty;
+    public string Cargo { get; set; } = string.Empty;
+    public string Periodo { get; set; } = string.Empty;
+    public List<string> Atividades { get; set; } = [];
+    public string Resultados { get; set; } = string.Empty;
+}
+
+public class FormacaoClienteDto
+{
+    public string Instituicao { get; set; } = string.Empty;
+    public string Curso { get; set; } = string.Empty;
+    public string Tipo { get; set; } = string.Empty;
+    public string Periodo { get; set; } = string.Empty;
+}

@@ -25,7 +25,7 @@ public class CurriculoController : ControllerBase
     }
 
     [HttpPost("gerar")]
-    public async Task<ActionResult<GerarCurriculoResponseDto>> GerarCurriculo([FromBody] GerarCurriculoRequestDto dto)
+    public async Task<ActionResult<GerarCurriculoResponseClienteDto>> GerarCurriculo([FromBody] GerarCurriculoRequestDto dto)
     {
         var usuarioId = GetUsuarioId();
         if (usuarioId == 0)
