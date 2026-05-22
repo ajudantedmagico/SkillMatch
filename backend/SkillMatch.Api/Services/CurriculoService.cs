@@ -168,7 +168,7 @@ public class CurriculoService : ICurriculoService
             Id = curriculo.Id,
             Titulo = curriculo.Titulo,
             DescricaoVaga = curriculo.DescricaoVaga,
-            Secoes = secoes,
+            Secoes = MapToClienteSecoes(secoes),
             DataGeracao = curriculo.DataGeracao,
             DataAtualizacao = curriculo.DataAtualizacao,
             CabecalhoEditado = curriculo.CabecalhoEditado,
@@ -176,6 +176,33 @@ public class CurriculoService : ICurriculoService
             ExperienciaEditada = curriculo.ExperienciaEditada,
             CompetenciasEditadas = curriculo.CompetenciasEditadas,
             FormacaoEditada = curriculo.FormacaoEditada
+        };
+    }
+
+    private CurriculoSecoesClienteDto MapToClienteSecoes(CurriculoSecoesDto secoes)
+    {
+        return new CurriculoSecoesClienteDto
+        {
+            ResumoProfissional = secoes.ResumoBio?.Conteudo ?? string.Empty,
+            ExperienciaProfissional = secoes.Experiencias?.Select(e => new ExperienciaClienteDto
+            {
+                Empresa = e.Empresa,
+                Cargo = e.Cargo,
+                Periodo = e.DataInicio == default ? string.Empty :
+                    $"{e.DataInicio:MMM yyyy} - {(e.DataFim?.ToString("MMM yyyy") ?? "Presente")}",
+                Atividades = (e.Descricao ?? string.Empty).Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim()).ToList(),
+                Resultados = string.Empty
+            }).ToList() ?? new List<ExperienciaClienteDto>(),
+            FormacaoAcademica = secoes.Formacoes?.Select(f => new FormacaoClienteDto
+            {
+                Instituicao = f.Instituicao,
+                Curso = f.Curso,
+                Tipo = f.Tipo,
+                Periodo = f.DataInicio == default ? string.Empty :
+                    $"{f.DataInicio:MMM yyyy} - {(f.DataConclusao?.ToString("MMM yyyy") ?? "Em andamento")}" 
+            }).ToList() ?? new List<FormacaoClienteDto>(),
+            CompetenciasTecnicas = secoes.Competencias?.Tecnicas ?? new List<string>(),
+            SoftSkills = secoes.Competencias?.Comportamentais ?? new List<string>()
         };
     }
 

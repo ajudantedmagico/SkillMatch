@@ -151,7 +151,7 @@ public class CurriculoDetalheDto
     public int Id { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string DescricaoVaga { get; set; } = string.Empty;
-    public CurriculoSecoesDto Secoes { get; set; } = new();
+    public CurriculoSecoesClienteDto Secoes { get; set; } = new();
     public DateTime DataGeracao { get; set; }
     public DateTime? DataAtualizacao { get; set; }
     public bool CabecalhoEditado { get; set; }

@@ -108,12 +108,48 @@
 <script>
   requireAuth();
 
-  const secoes = JSON.parse(sessionStorage.getItem('cv_secoes') || '{}');
-  const descricaoVaga = sessionStorage.getItem('cv_vaga') || '';
+  const urlParams = new URLSearchParams(window.location.search);
+  let cvId = urlParams.get('id');
+  let secoes = JSON.parse(sessionStorage.getItem('cv_secoes') || '{}');
+  let descricaoVaga = sessionStorage.getItem('cv_vaga') || '';
 
-  if (!secoes.resumoProfissional) {
-    showToast('Nenhum CV gerado. Volte e tente novamente.', 'error');
-    setTimeout(() => window.location.href = 'chat.html', 2000);
+  async function carregarCVExistente(id) {
+    try {
+      showLoading('Carregando CV...');
+      const cv = await api.getCV(id);
+      if (!cv || !cv.secoes) throw new Error('CV não encontrado');
+
+      cvId = id;
+      sessionStorage.setItem('cv_id', id);
+      descricaoVaga = cv.descricaoVaga || '';
+      secoes = cv.secoes;
+      document.getElementById('cv-titulo').value = cv.titulo || '';
+      hideLoading();
+      return true;
+    } catch (err) {
+      hideLoading();
+      showToast('Não foi possível carregar o CV salvo.', 'error');
+      setTimeout(() => window.location.href = 'historico.html', 2000);
+      return false;
+    }
+  }
+
+  async function inicializarPagina() {
+    if (cvId) {
+      await carregarCVExistente(cvId);
+    }
+
+    if (!secoes.resumoProfissional) {
+      showToast('Nenhum CV gerado. Volte e tente novamente.', 'error');
+      setTimeout(() => window.location.href = 'chat.html', 2000);
+      return;
+    }
+
+    document.getElementById('resumo-prof').value = secoes.resumoProfissional || '';
+    renderExperiencias();
+    renderFormacoes();
+    renderCompetencias();
+    renderSoftSkills();
   }
 
   // Flags de edição manual (RN-08)
@@ -125,7 +161,7 @@
   }
 
   // ── Competências ──
-  let competencias = [...(secoes.competenciasTecnicas || [])];
+  let competencias = [];
   function renderCompetencias() {
     document.getElementById('tags-comp').innerHTML = competencias.map((c, i) => `
       <span class="tag active" style="color:white;border-color:rgba(255,255,255,0.4)">
@@ -140,7 +176,7 @@
   function removeComp(i) { competencias.splice(i, 1); markEdited('comp'); renderCompetencias(); }
 
   // ── Soft Skills ──
-  let softSkills = [...(secoes.softSkills || [])];
+  let softSkills = [];
   function renderSoftSkills() {
     document.getElementById('tags-soft').innerHTML = softSkills.map((s, i) => `
       <span class="tag active" style="color:white;border-color:rgba(255,255,255,0.4)">
@@ -155,7 +191,7 @@
   function removeSoft(i) { softSkills.splice(i, 1); markEdited('soft'); renderSoftSkills(); }
 
   // ── Experiências editáveis ──
-  let experiencias = [...(secoes.experienciaProfissional || [])];
+  let experiencias = [];
   function renderExperiencias() {
     document.getElementById('exp-list').innerHTML = experiencias.map((e, i) => `
       <div class="exp-item">
@@ -176,12 +212,14 @@
       </div>`).join('');
   }
 
+  function atualizarListasDeSecoes() {
+    competencias = [...(secoes.competenciasTecnicas || [])];
+    softSkills = [...(secoes.softSkills || [])];
+    experiencias = [...(secoes.experienciaProfissional || [])];
+  }
+
   // ── Init ──
-  document.getElementById('resumo-prof').value = secoes.resumoProfissional || '';
-  renderExperiencias();
-  renderFormacoes();
-  renderCompetencias();
-  renderSoftSkills();
+  inicializarPagina();
 
   // ── Salvar (RN-09: confirmação explícita) ──
   async function salvarCV() {
