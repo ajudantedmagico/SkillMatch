@@ -398,6 +398,54 @@ body {
   background: rgba(255, 255, 255, 0.23);
 }
 
+/* Small utilities for page text */
+.muted { font-size: 13px; color: rgba(255,255,255,0.88); margin-bottom: 12px; }
+
+/* Experiência / itens do CV */
+.exp-item {
+  background: rgba(0,0,0,0.03);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+  color: var(--gray-700);
+}
+.exp-item strong { font-size: 14px; color: var(--gray-700); }
+.exp-item textarea { width: 100%; padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.06); resize: vertical; background: #ffffff; color: var(--gray-700); }
+.exp-item label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.8; display: block; margin: 8px 0 6px; color: var(--gray-700); }
+
+/* Badge indicando edição */
+.edited-badge {
+  font-size: 12px;
+  background: var(--purple-main);
+  color: var(--white);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* Barra fixa de salvar — maior, com contraste leve e cantos arredondados */
+.save-bar {
+  position: fixed;
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 430px;
+  display: flex;
+  gap: 10px;
+  z-index: 60;
+  padding: 10px;
+  background: rgba(20,0,50,0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.save-bar .btn { padding: 10px 12px; font-size: 14px; }
+.save-bar .btn + .btn { min-width: 68px; }
+
+/* Make inputs inside .field slightly larger for readability */
+.field input, .field textarea { padding: 12px 14px; font-size: 15px; }
+
+
 .btn-history {
   padding: 14px 24px;
   font-size: 14px;
