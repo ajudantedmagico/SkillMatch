@@ -191,22 +191,19 @@
     const btn = document.getElementById('btn-salvar');
     btn.disabled = true; btn.textContent = 'Salvando...';
     try {
-      await api.salvarCV({
+      const payload = {
         titulo,
         descricaoVaga,
-        secoes: {
-          resumoProfissional: document.getElementById('resumo-prof').value,
-          experienciaProfissional: experiencias,
-          formacaoAcademica: secoes.formacaoAcademica || [],
-          competenciasTecnicas: competencias,
-          softSkills
-        },
+        secoes: buildBackendSecoes(titulo),
         cabecalhoEditado: false,
         resumoBioEditado: flags.resumo,
         experienciaEditada: flags.exp,
         competenciasEditadas: flags.comp,
         formacaoEditada: flags.form
-      });
+      };
+
+      const result = await api.salvarCV(payload);
+      if (result?.id) sessionStorage.setItem('cv_id', result.id);
       sessionStorage.removeItem('cv_secoes');
       sessionStorage.removeItem('cv_vaga');
       showToast('CV salvo no histórico! ✓');
@@ -228,31 +225,31 @@
       // First save the CV if not saved yet
       let cvId = sessionStorage.getItem('cv_id');
       if (!cvId) {
-        const result = await api.salvarCV({
+        const payload = {
           titulo,
           descricaoVaga,
-          secoes: {
-            resumoProfissional: document.getElementById('resumo-prof').value,
-            experienciaProfissional: experiencias,
-            formacaoAcademica: secoes.formacaoAcademica || [],
-            competenciasTecnicas: competencias,
-            softSkills
-          },
+          secoes: buildBackendSecoes(titulo),
           cabecalhoEditado: false,
           resumoBioEditado: flags.resumo,
           experienciaEditada: flags.exp,
           competenciasEditadas: flags.comp,
           formacaoEditada: flags.form
-        });
-        cvId = result.id;
-        sessionStorage.setItem('cv_id', cvId);
+        };
+        const result = await api.salvarCV(payload);
+        cvId = result?.id;
+        if (cvId) sessionStorage.setItem('cv_id', cvId);
       }
 
-      const blob = await api.downloadCVWord(cvId);
+      if (!cvId) throw new Error('Não foi possível salvar o CV antes do download');
+
+      const result = await api.downloadCVWord(cvId);
+      const blob = result.blob;
+      const ct = (result.contentType || '').toLowerCase();
+      const ext = ct.includes('pdf') ? 'pdf' : (ct.includes('wordprocessingml') || ct.includes('officedocument') ? 'docx' : 'docx');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${titulo}.docx`;
+      a.download = `${titulo}.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -275,41 +272,102 @@
       // First save the CV if not saved yet
       let cvId = sessionStorage.getItem('cv_id');
       if (!cvId) {
-        const result = await api.salvarCV({
+        const payload = {
           titulo,
           descricaoVaga,
-          secoes: {
-            resumoProfissional: document.getElementById('resumo-prof').value,
-            experienciaProfissional: experiencias,
-            formacaoAcademica: secoes.formacaoAcademica || [],
-            competenciasTecnicas: competencias,
-            softSkills
-          },
+          secoes: buildBackendSecoes(titulo),
           cabecalhoEditado: false,
           resumoBioEditado: flags.resumo,
           experienciaEditada: flags.exp,
           competenciasEditadas: flags.comp,
           formacaoEditada: flags.form
-        });
-        cvId = result.id;
-        sessionStorage.setItem('cv_id', cvId);
+        };
+        const result = await api.salvarCV(payload);
+        cvId = result?.id;
+        if (cvId) sessionStorage.setItem('cv_id', cvId);
       }
 
-      const blob = await api.downloadCVPdf(cvId);
+      if (!cvId) throw new Error('Não foi possível salvar o CV antes do download');
+
+      const result = await api.downloadCVPdf(cvId);
+      const blob = result.blob;
+      const ct = (result.contentType || '').toLowerCase();
+      const ext = ct.includes('pdf') ? 'pdf' : (ct.includes('wordprocessingml') || ct.includes('officedocument') ? 'docx' : 'pdf');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${titulo}.pdf`;
+      a.download = `${titulo}.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       showToast('CV baixado em PDF! ✓');
     } catch (err) {
-      showToast(err.message || 'Erro ao baixar CV', 'error');
+      showToast('Falha ao gerar PDF. Tentando baixar em Word...', 'error');
+      try {
+        const w = await api.downloadCVWord(cvId);
+        const blobW = w.blob;
+        const urlW = window.URL.createObjectURL(blobW);
+        const aW = document.createElement('a');
+        aW.href = urlW;
+        aW.download = `${titulo}.docx`;
+        document.body.appendChild(aW);
+        aW.click();
+        window.URL.revokeObjectURL(urlW);
+        document.body.removeChild(aW);
+        showToast('PDF indisponível. CV baixado em Word.', 'success');
+      } catch (err2) {
+        showToast(err2.message || 'Erro ao baixar CV', 'error');
+      }
     } finally {
       btn.disabled = false; btn.textContent = '📕 PDF';
     }
+  }
+
+  // ── Constrói o objeto de seções no formato que o backend espera (CurriculoSecoesDto)
+  function buildBackendSecoes(titulo) {
+    const user = api.getUser() || { nome: titulo };
+    const cabecalho = {
+      Nome: user.nome || titulo,
+      Email: user.email || '',
+      Telefone: '',
+      LinkedIn: '',
+      Portfolio: '',
+      Localizacao: ''
+    };
+
+    const resumo = { Conteudo: document.getElementById('resumo-prof').value || '' };
+
+    const experienciasBackend = experiencias.map(e => ({
+      Empresa: e.empresa || e.Empresa || '',
+      Cargo: e.cargo || e.Cargo || '',
+      DataInicio: new Date().toISOString(),
+      DataFim: null,
+      Descricao: (e.atividades || []).join('\n'),
+      Tecnologias: e.tecnologias || []
+    }));
+
+    const formacoesBackend = (secoes.formacaoAcademica || []).map(f => ({
+      Instituicao: f.instituicao || f.Instituicao || '',
+      Curso: f.curso || f.Curso || '',
+      Tipo: f.tipo || f.Tipo || '',
+      DataInicio: new Date().toISOString(),
+      DataConclusao: null
+    }));
+
+    const competenciasBackend = {
+      Tecnicas: competencias || [],
+      Comportamentais: softSkills || []
+    };
+
+    return {
+      Cabecalho: cabecalho,
+      ResumoBio: resumo,
+      Experiencias: experienciasBackend,
+      Competencias: competenciasBackend,
+      Formacoes: formacoesBackend,
+      Certificacoes: []
+    };
   }
 </script>
 </body>

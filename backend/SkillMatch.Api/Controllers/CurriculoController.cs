@@ -110,7 +110,14 @@ public class CurriculoController : ControllerBase
 
         var bytes = await _curriculoService.ExportarPdfAsync(usuarioId, id);
         if (bytes.Length == 0)
-            return NotFound(new { message = "Currículo não encontrado" });
+        {
+            // Tenta fallback para Word caso a geração de PDF falhe
+            var wordBytes = await _curriculoService.ExportarWordAsync(usuarioId, id);
+            if (wordBytes.Length == 0)
+                return NotFound(new { message = "Currículo não encontrado" });
+
+            return File(wordBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"curriculo_{id}.docx");
+        }
 
         return File(bytes, "application/pdf", $"curriculo_{id}.pdf");
     }

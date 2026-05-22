@@ -35,12 +35,14 @@ public class CurriculoService : ICurriculoService
     private readonly SkillMatchContext _context;
     private readonly IPerfilService _perfilService;
     private readonly IOpenAIService _openAIService;
+    private readonly Microsoft.Extensions.Logging.ILogger<CurriculoService> _logger;
 
-    public CurriculoService(SkillMatchContext context, IPerfilService perfilService, IOpenAIService openAIService)
+    public CurriculoService(SkillMatchContext context, IPerfilService perfilService, IOpenAIService openAIService, Microsoft.Extensions.Logging.ILogger<CurriculoService> logger)
     {
         _context = context;
         _perfilService = perfilService;
         _openAIService = openAIService;
+        _logger = logger;
     }
 
     public async Task<GerarCurriculoResponseClienteDto> GerarCurriculoAsync(int usuarioId, GerarCurriculoRequestDto dto)
@@ -199,6 +201,7 @@ public class CurriculoService : ICurriculoService
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex, "Erro ao gerar Word para curriculoId={CurriculoId} usuarioId={UsuarioId}", curriculoId, usuarioId);
             return Array.Empty<byte>();
         }
     }
@@ -218,6 +221,7 @@ public class CurriculoService : ICurriculoService
         }
         catch (Exception ex)
         {
+            _logger?.LogError(ex, "Erro ao gerar PDF para curriculoId={CurriculoId} usuarioId={UsuarioId}", curriculoId, usuarioId);
             return Array.Empty<byte>();
         }
     }
@@ -348,11 +352,11 @@ public class CurriculoService : ICurriculoService
     {
         using (var memoryStream = new MemoryStream())
         {
-            using (var pdfWriter = new PdfWriter(memoryStream))
-            {
-                using (var pdfDocObj = new iText.Kernel.Pdf.PdfDocument(pdfWriter))
+                using (var pdfWriter = new PdfWriter(memoryStream))
                 {
-                    var document = new PdfDocument(pdfDocObj);
+                    using (var pdfDocObj = new iText.Kernel.Pdf.PdfDocument(pdfWriter))
+                    {
+                        var document = new PdfDocument(pdfDocObj);
                     document.SetMargins(36, 36, 36, 36);
 
                     // Nome

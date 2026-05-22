@@ -16,6 +16,7 @@
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.0.1" />
     <PackageReference Include="iText7" Version="8.0.3" />
+    <PackageReference Include="BouncyCastle.NetCore" Version="1.9.0" />
   </ItemGroup>
 
 </Project>

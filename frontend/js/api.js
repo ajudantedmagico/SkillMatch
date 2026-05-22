@@ -105,7 +105,8 @@ const api = {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) throw new Error(`Erro ${response.status}`);
-    return response.blob();
+    const blob = await response.blob();
+    return { blob, contentType: response.headers.get('content-type') };
   },
 
   downloadCVPdf: async (id) => {
@@ -114,7 +115,8 @@ const api = {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) throw new Error(`Erro ${response.status}`);
-    return response.blob();
+    const blob = await response.blob();
+    return { blob, contentType: response.headers.get('content-type') };
   },
 };
 
